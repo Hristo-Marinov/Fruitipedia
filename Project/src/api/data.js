@@ -1,34 +1,33 @@
-import * as api from './api.js';
+import * as api from "./api.js";
 
-const endpoints = {
-	getAll: '/data/fruits?sortBy=_createdOn%20desc',
-	create: '/data/fruits',
-	getById: '/data/fruits/',
-	deleteById: '/data/fruits/',
-	editById: '/data/fruits/',
-	search: (query) => `/data/fruits?where=name%20LIKE%20%22${query}%22`,
-};
+const host = "http://localhost:3030";
+api.settings.host = host;
 
-export async function getAll() {
-	return api.get(endpoints.getAll);
+export const login = api.login;
+export const register = api.register;
+export const logout = api.logout;
+
+export async function getAllFruits() {
+  return await api.get(host + "/data/fruits?sortBy=_createdOn%20desc");
 }
 
-export async function create(data) {
-	return api.post(endpoints.create, data);
+export async function getFruitById(id) {
+  return await api.get(host + `/data/fruits/${id}`);
 }
 
-export async function getById(id) {
-	return api.get(endpoints.getById + id);
+export async function addFruit(fruit) {
+  return await api.post(host + "/data/fruits", fruit);
 }
 
-export async function deleteById(id) {
-	return api.del(endpoints.deleteById + id);
+export async function editFruitById(id, fruit) {
+  return await api.put(host + `/data/fruits/${id}`, fruit);
 }
 
-export async function editById(id, data) {
-	return api.put(endpoints.editById + id, data);
+export async function deleteFruitById(id) {
+  return await api.del(host + `/data/fruits/${id}`);
 }
 
 export async function search(query) {
-	return api.get(endpoints.search(query));
+  return await api.get(host + `/data/fruits?where=name%20LIKE%20%22${query}%22`);
 }
+

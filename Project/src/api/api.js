@@ -1,46 +1,82 @@
-import { clearUserData, getAccessToken } from '../util.js';
+import { clearUserData, getUserData, setUserData } from '../utl.js'
 
-const host = 'http://localhost:3030';
+export const settings = {
+    host: ''
+};
 
-async function request(method, url, data) {
-	const options = {
-		method,
-		headers: {},
-	};
+async function request(url, options) {
+    try {
+        const response = await fetch(url, options);
+        if (response.ok == false) {
+            const error = await response.json();
+            throw new Error(error.message);
+        }
+        try {
+            const data = await response.json();
+            return data;
 
-	const token = getAccessToken();
-	if (token) {
-		options.headers['X-Authorization'] = token;
-	}
+        } catch (err) {
+            return response;
+        }
 
-	if (data) {
-		options.headers['Content-Type'] = 'application/json';
-		options.body = JSON.stringify(data);
-	}
-
-	try {
-		const response = await fetch(host + url, options);
-
-		if (response.ok !== true) {
-			if (response.status === 403) {
-				clearUserData();
-			}
-			const error = await response.json();
-			throw new Error(error.message);
-		}
-
-		if (response.status === 204) {
-			return response;
-		} else {
-			return response.json();
-		}
-	} catch (err) {
-		alert(err.message);
-		throw err;
-	}
+    } catch (err) {
+        alert(err.message);
+        throw err;
+    }
 }
 
-export const get = request.bind(null, 'get');
-export const post = request.bind(null, 'post');
-export const put = request.bind(null, 'put');
-export const del = request.bind(null, 'delete');
+function createOptions(method = 'get', body) {
+    const options = {
+        method,
+        headers: {}
+    }
+
+    const user = getUserData();
+    if (user) {
+        options.headers['x-authorization'] = user.accessToken;
+    }
+
+    if (body) {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(body);
+    }
+
+    return options;
+}
+
+export async function get(url) {
+    return await request(url, createOptions());
+}
+
+export async function post(url, data) {
+    return await request(url, createOptions('post', data));
+}
+
+export async function put(url, data) {
+    return await request(url, createOptions('put', data));
+}
+
+export async function del(url) {
+    return await request(url, createOptions('delete'));
+}
+
+export async function login(email, password) {
+    const result = await post(settings.host + '/users/login', { email, password });
+    setUserData(result);
+    
+    return result;
+}
+
+export async function register(email, password) {
+    const result = await post(settings.host + '/users/register', { email, password });
+    setUserData(result);
+    
+    return result;
+}
+
+export function logout() {
+    const result = get(settings.host + '/users/logout');
+    clearUserData();
+    
+    return result;
+}
