@@ -1,43 +1,60 @@
-import page from '../node_modules/page/page.mjs';
+import { render } from "../node_modules/lit-html/lit-html.js";
+import page from "../node_modules/page/page.mjs";
 
-import { addSession } from './middlewares/session.js';
-import { addRender } from './middlewares/render.js';
+import { logout as apiLogout } from "./api/api.js";
+import { getUserData } from "./utl.js";
+import { loginPage, registerPage } from "./view/auth.js";
+import { homePage } from "./view/home.js";
+import { dashboardPage } from "./view/dashboard.js";
+import { detailsPage } from "./view/details.js";
+import { editPage } from "./view/edit.js";
+import { createPage } from "./view/create.js";
+import { searchPage } from "./view/search.js";
 
-import { homePage } from './views/home.js';
-import { catalogPage } from './views/catalog.js';
-import { loginPage } from './views/login.js';
-import { registerPage } from './views/register.js';
-import { createPage } from './views/create.js';
-import { detailsPage } from './views/details.js';
-import { editPage } from './views/edit.js';
-import { searchPage } from './views/search.js';
+const main = document.querySelector("#content");
 
-import { logout } from './api/user.js';
+setUserNav();
 
-page(addSession);
-page(addRender);
+document.getElementById("logout-btn").addEventListener("click", onLogout);
 
-page('/', homePage);
-page('/catalog', catalogPage);
-page('/login', loginPage);
-page('/register', registerPage);
-page('/create', requireLogin, createPage);
-page('/details/:id', detailsPage);
-page('/edit/:id', requireLogin, editPage);
-page('/search', searchPage);
-page('/logout', onLogout);
+page("/", decorateContext, homePage);
+page("/login", decorateContext, loginPage);
+page("/register", decorateContext, registerPage);
+page("/dashboard", decorateContext, dashboardPage);
+page("/details/:id", decorateContext, detailsPage);
+page("/edit/:id", decorateContext, editPage);
+page("/add-fruit", decorateContext, createPage);
+page("/search", decorateContext, searchPage);
+
 
 page.start();
 
-function onLogout(ctx) {
-	logout();
-	ctx.page.redirect('/');
+function decorateContext(ctx, next) {
+  ctx.render = (content) => render(content, main);
+  ctx.setUserNav = setUserNav;
+  ctx.user = getUserData();
+
+  next();
 }
 
-function requireLogin(ctx, next) {
-	if (getAccessToken() == null) {
-	  return page.redirect('/login');
-	}
-  
-	return next();
+function setUserNav() {
+  const userAsJson = sessionStorage.getItem("user");
+  const user = userAsJson && JSON.parse(userAsJson);
+  const guestDiv = document.querySelector(".guest");
+  const userDiv = document.querySelector(".user");
+  user != null
+    ? [
+        (userDiv.style.display = "inline-block"),
+        (guestDiv.style.display = "none"),
+      ]
+    : [
+        (userDiv.style.display = "none"),
+        (guestDiv.style.display = "inline-block"),
+      ];
+}
+
+async function onLogout() {
+  await apiLogout();
+  setUserNav();
+  page.redirect("/");
 }
